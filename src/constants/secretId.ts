@@ -1,1 +1,1 @@
-export const SECRET_ID = 'sunken-treasure-api-secrets';
+export const SECRET_ID = 'engagemint-x-credentials';

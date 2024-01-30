@@ -1,23 +1,24 @@
 import { Router } from 'express';
-import {
-  getTwitterLogin,
-  registerUser,
-  getUserRank,
-  getLeaderboard
-} from '../controllers';
+import { getXAuthUrl, registerUser, getUserStats, getLeaderboard, getXExchangeCode, getProjectConfig } from '../controllers';
 
 const apiRouter = Router();
 
-// Get twitter login credentials
-apiRouter.get('/twitter-login', getTwitterLogin);
+// Get x (Twitter) login url
+apiRouter.get('/x-auth-url', getXAuthUrl);
+
+// Exchange code from x (Twitter) for access token
+apiRouter.post('/x-exchange-code', getXExchangeCode);
 
 // Return the leaderboard for a given ticker
 apiRouter.get('/leaderboard', getLeaderboard);
 
 // Return the users position on the leaderboard
-apiRouter.get('/leaderboard/:id', getUserRank);
+apiRouter.get('/user-stats', getUserStats);
 
-// Register a twitter account with a ticker
+// Return the users position on the leaderboard
+apiRouter.get('/project-config', getProjectConfig);
+
+// Register an x (Twitter) account with a ticker
 apiRouter.post('/register', registerUser);
 
 export default apiRouter;
