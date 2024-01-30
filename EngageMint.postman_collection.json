@@ -1,0 +1,87 @@
+{
+	"info": {
+		"_postman_id": "71afe6d0-3f56-41a0-961e-9971faccfe13",
+		"name": "EngageMint",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3936619"
+	},
+	"item": [
+		{
+			"name": "leaderboard",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "x-auth-url",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "x-exchange-code",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3001/register?ticker=CLIFF&epoch=2&x_access_token=aU9LMWl2MUhIbkM3WldaVHRJRkwyQ1VucFZVWEswQTNiQnpaVjl2bzNkRWpuOjE3MDU2MTk5Njg1NDg6MTowOmF0OjE&signature={\n    \"pub_key\": {\n        \"type\": \"tendermint/PubKeySecp256k1\",\n        \"value\": \"Al8/oZlzNJaFewLagIFGalV4wgXCfP5lKBoTnl1ncsBc\"\n    },\n    \"signature\": \"1WN5G5gWPHyV0NQ3XBuKzcsOaAc3YYkP7tCrWVhYKNkE4OSqIjnRy+jv51/6BSw9yoqM6CTy9LBRYGtDJ46zMw==\"\n}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"register"
+					],
+					"query": [
+						{
+							"key": "ticker",
+							"value": "CLIFF"
+						},
+						{
+							"key": "epoch",
+							"value": "2"
+						},
+						{
+							"key": "x_access_token",
+							"value": "aU9LMWl2MUhIbkM3WldaVHRJRkwyQ1VucFZVWEswQTNiQnpaVjl2bzNkRWpuOjE3MDU2MTk5Njg1NDg6MTowOmF0OjE"
+						},
+						{
+							"key": "signature",
+							"value": "{\n    \"pub_key\": {\n        \"type\": \"tendermint/PubKeySecp256k1\",\n        \"value\": \"Al8/oZlzNJaFewLagIFGalV4wgXCfP5lKBoTnl1ncsBc\"\n    },\n    \"signature\": \"1WN5G5gWPHyV0NQ3XBuKzcsOaAc3YYkP7tCrWVhYKNkE4OSqIjnRy+jv51/6BSw9yoqM6CTy9LBRYGtDJ46zMw==\"\n}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user-stats",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "project-config",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}

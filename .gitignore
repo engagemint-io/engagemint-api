@@ -10,3 +10,6 @@ buildApi/
 *.tfstate.*
 *terraform.lock.hcl
 *.tfvars
+
+.env.local
+.env.local
