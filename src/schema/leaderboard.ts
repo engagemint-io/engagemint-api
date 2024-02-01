@@ -3,6 +3,7 @@ import dynamoose from 'dynamoose';
 export const LEADERBOARD_TABLE_NAME = 'engagemint-epoch_leaderboard_table';
 
 export const LeaderboardTickerEpochCompositeKey = 'ticker_epoch_composite';
+export const LeaderboardLastUpdatedAtKey = 'last_updated_at';
 export const LeaderboardTotalPointsKey = 'total_points';
 export const LeaderboardUserAccountIdKey = 'user_account_id';
 export const LeaderboardViewPointsKey = 'view_points';
@@ -24,6 +25,7 @@ export const LeaderboardModel = dynamoose.model(LEADERBOARD_TABLE_NAME, {
 			project: true // Projects all attributes
 		}
 	},
+	[LeaderboardLastUpdatedAtKey]: String,
 	[LeaderboardTotalPointsKey]: Number,
 	[LeaderboardViewPointsKey]: Number,
 	[LeaderboardVideoViewPointsKey]: Number,
