@@ -14,7 +14,6 @@ const DEFAULT_QUERY_RESPONSE_LIMIT: number = parseInt(process.env.LEADERBOARD_CS
 const leaderboardCsv = async (req: Request, res: Response) => {
 	const { ticker, epoch, signature, message } = req.query;
 
-	// TODD: Add signature verification and admin user validation to make sure user is authorized to access this dat
 	if (!ticker) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
 			status: 'fail',
@@ -26,6 +25,13 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 		return res.status(StatusCodes.BAD_REQUEST).json({
 			status: 'fail',
 			message: 'Validation: You must pass an epoch!'
+		});
+	}
+
+	if (isNaN(parseInt(epoch as string))) {
+		return res.status(StatusCodes.BAD_REQUEST).json({
+			status: 'fail',
+			message: 'Validation: Epoch must be a number!'
 		});
 	}
 
@@ -58,11 +64,10 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 		return res.status(StatusCodes.FORBIDDEN).send({ linked: false, reason: 'Signature is invalid.' });
 	}
 
-	if (isNaN(parseInt(epoch as string))) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: Epoch must be a number!'
-		});
+	// Verify that the ticker belongs to the user
+	const configTicker = response[ProjectConfigTickerKey];
+	if (configTicker !== ticker) {
+		return res.status(StatusCodes.UNAUTHORIZED).send({ linked: false, reason: 'Unauthorized to access ticker.' });
 	}
 
 	try {

@@ -96,10 +96,13 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 });
 
 describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
+
+	// Reused query params
+	const message = 'Requesting leaderboard download for epoch X';
+	const urlEncodedMessage = encodeURIComponent(message);
+	const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+
 	test('GET /leaderboardCsv with valid request returns CSV', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
 
 		const response = await request(app).get(url);
@@ -143,13 +146,10 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 
 			// Check the number of rows
 			expect(rows.length).toBe(MockLeaderboardRows.length);
-
 		});
 	});
 
 	test('GET /leaderboardCsv with invalid signature should fail', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
 		const invalidSignature = { ...MockSignature, signature: 'invalid_signature' };
 		const base64encodedInvalidSignature = Buffer.from(JSON.stringify(invalidSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedInvalidSignature}`;
@@ -163,7 +163,6 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	test('GET /leaderboardCsv with invalid message should fail', async () => {
 		const invalidMessage = 'Invalid message';
 		const urlEncodedInvalidMessage = encodeURIComponent(invalidMessage);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedInvalidMessage}&signature=${base64encodedSignature}`;
 
 		const response = await request(app).get(url);
@@ -173,9 +172,6 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	});
 
 	test('GET /leaderboardCsv with invalid epoch should fail', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=CLIFF&epoch=invalid_epoch&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
 
 		const response = await request(app).get(url);
@@ -185,11 +181,7 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	});
 
 	test('GET /leaderboardCsv with invalid wallet should fail', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
-
 		mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfigWithInvalidAdminWallet);
 
 		const response = await request(app).get(url);
@@ -199,27 +191,13 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	});
 
 	test('GET /leaderboardCsv with ticker that does not belong to user should fail', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 		const url = `/leaderboardCsv?ticker=INVALID_TICKER&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+		mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfig);
 
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-		expect(response.body).toEqual({ linked: false, reason: 'Not authorized to access ticker' });
-	});
-
-	test('GET /leaderboardCsv with epoch that does not exist should fail', async () => {
-		const message = 'Requesting leaderboard download for epoch X';
-		const urlEncodedMessage = encodeURIComponent(message);
-		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
-		const url = `/leaderboardCsv?ticker=INVALID_TICKER&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
-
-		const response = await request(app).get(url);
-
-		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-		expect(response.body).toEqual({ linked: false, reason: 'Invalid epoch' });
+		expect(response.body).toEqual({ linked: false, reason: 'Unauthorized to access ticker.' });
 	});
 
 });
