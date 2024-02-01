@@ -1,18 +1,49 @@
 import { Request, Response } from 'express';
-import { LeaderboardTickerEpochCompositeKey, LeaderboardModel } from '../schema';
+import {
+	LeaderboardTickerEpochCompositeKey,
+	LeaderboardModel,
+	ProjectConfigModel,
+	ProjectConfigTickerKey, AdminWalletAddressKey
+} from '../schema';
 import { StatusCodes } from 'http-status-codes';
 import { parse } from 'json2csv';
+import { verifySignature } from '../utils';
 
 const DEFAULT_QUERY_RESPONSE_LIMIT: number = parseInt(process.env.LEADERBOARD_CSV_RESPONSE_LIMIT as string) || 50;
 
 const leaderboardCsv = async (req: Request, res: Response) => {
-	const { ticker, epoch } = req.query;
+	const { ticker, epoch, signature, message } = req.query;
 
+	// TODD: Add signature verification and admin user validation to make sure user is authorized to access this dat
 	if (!ticker) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
 			status: 'fail',
 			message: 'Validation: You must pass a ticker!'
 		});
+	}
+
+	if (!signature) {
+		return res.status(StatusCodes.BAD_REQUEST).json({
+			status: 'fail',
+			message: 'Validation: You must pass a signature!'
+		});
+	}
+
+	// Get the admin wallet address from the database
+	const query = ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1);
+
+	const response = await query.exec();
+	const adminWalletAddress = response[AdminWalletAddressKey];
+
+	console.log('got adminWalletAddress');
+	console.log(Buffer.from(signature as string, 'base64').toString('utf-8'))
+	const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
+
+	//First, verify the signature
+	const isValidSignature = await verifySignature(adminWalletAddress, message, parsedSignature);
+
+	if (!isValidSignature) {
+		return res.status(StatusCodes.FORBIDDEN).send({ linked: false, reason: 'Signature is invalid.' });
 	}
 
 	if (!epoch) {
@@ -53,7 +84,7 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 
 		// Set the response headers to indicate a file attachment
 		res.attachment('leaderboard.csv');
-		res.type('text/csv')
+		res.type('text/csv');
 		// Send the CSV data
 		return res.status(StatusCodes.OK).send(csv);
 	} catch (error) {

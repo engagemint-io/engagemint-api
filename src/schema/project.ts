@@ -3,6 +3,7 @@ import dynamoose from 'dynamoose';
 export const PROJECT_CONFIG_TABLE_NAME = 'engagemint-project_configuration_table';
 
 export const ProjectConfigTickerKey = 'ticker';
+export const AdminWalletAddressKey = 'admin_wallet_address';
 const EpochLengthDays = 'epoch_length_days';
 const EpochStartDateUTC = 'epoch_start_date_utc';
 const LikeMultiplier = 'like_multiplier';
@@ -16,6 +17,21 @@ export const ProjectConfigModel = dynamoose.model(PROJECT_CONFIG_TABLE_NAME, {
 		type: String,
 		hashKey: true
 	},
+	[EpochLengthDays]: Number,
+	[EpochStartDateUTC]: String,
+	[LikeMultiplier]: Number,
+	[QuoteMultiplier]: Number,
+	[RetweetMultiplier]: Number,
+	[VideoViewMultiplier]: Number,
+	[ViewMultiplier]: Number
+});
+
+export const ProjectConfigModelWithAdminWallet = dynamoose.model(PROJECT_CONFIG_TABLE_NAME, {
+	[ProjectConfigTickerKey]: {
+		type: String,
+		hashKey: true
+	},
+	[AdminWalletAddressKey]: String,
 	[EpochLengthDays]: Number,
 	[EpochStartDateUTC]: String,
 	[LikeMultiplier]: Number,

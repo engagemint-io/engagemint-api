@@ -3,7 +3,7 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import csvParser from 'csv-parser';
 
-import { MockLeaderboardRows } from '../../mocks';
+import { MockLeaderboardRows, MockProjectConfig } from '../../mocks';
 import { getLeaderboardCsv } from '../index';
 import {
 	LeaderboardFavoritePointsKey, LeaderboardLastUpdatedAtKey, LeaderboardQuotePointsKey, LeaderboardRetweetPointsKey,
@@ -21,6 +21,20 @@ jest.mock('../../schema/leaderboard', () => ({
 			eq: () => ({
 				limit: () => ({
 					exec: jest.fn().mockResolvedValue(MockLeaderboardRows)
+				})
+			})
+		})
+	}
+}));
+
+jest.mock('../../schema/project', () => ({
+	...jest.requireActual('../../schema/project'),
+	ProjectConfigModel: {
+		...jest.requireActual('../../schema/project').ProjectConfigModel,
+		query: () => ({
+			eq: () => ({
+				limit: () => ({
+					exec: jest.fn().mockResolvedValue(MockProjectConfig)
 				})
 			})
 		})
@@ -45,12 +59,31 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 	});
+
+	test('GET /leaderboardCsv with just epoch should fail', async () => {
+		const response = await request(app).get('/leaderboardCsv?epoch=2');
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+	});
+
+	test('GET /leaderboardCsv with just signature should fail', async () => {
+		const response = await request(app).get('/leaderboardCsv?signature=1234');
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+	});
 });
 
 describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
-	test('GET /leaderboardCsv with valid request returns items', async () => {
-		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2');
-
+	test('GET /leaderboardCsv with valid request returns CSV', async () => {
+		const signature ='{\n' +
+			'    "pub_key": {\n' +
+			'        "type": "tendermint/PubKeySecp256k1",\n' +
+			'        "value": "A9OBlQaR2NfGfaHkL/fHi59kl0lUm3grF3KF8UOjltOz"\n' +
+			'    },\n' +
+			'    "signature": "B/RaaP030PPgePo0W7nELPt3XQGZjfQHF5Pfl1O9CqNGboFzv+HtaxKsMECX9ZQsh8XibomgpoL5g4HEUIOt0g=="\n' +
+			'}'
+		const base64encodedSignature = Buffer.from(signature).toString('base64');
+		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2&message=Requesting%20leaderboard%20download%20for%20epoch%20X&signature=' + base64encodedSignature);
 
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.type).toBe('text/csv');
