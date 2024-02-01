@@ -3,14 +3,15 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import csvParser from 'csv-parser';
 
-import { MockLeaderboardRows, MockProjectConfig } from '../../mocks';
+import { MockLeaderboardRows, MockProjectConfig, MockProjectConfigWithInvalidAdminWallet } from '../../mocks';
 import { getLeaderboardCsv } from '../index';
 import {
 	LeaderboardFavoritePointsKey, LeaderboardLastUpdatedAtKey, LeaderboardQuotePointsKey, LeaderboardRetweetPointsKey,
 	LeaderboardTickerEpochCompositeKey,
 	LeaderboardTotalPointsKey,
-	LeaderboardUserAccountIdKey, LeaderboardVideoViewPointsKey, LeaderboardViewPointsKey
+	LeaderboardUserAccountIdKey, LeaderboardVideoViewPointsKey, LeaderboardViewPointsKey, ProjectConfigModel
 } from '../../schema';
+import { MockSignature } from '../../mocks/signature';
 
 // Mock the LeaderboardModel.query() function to return a mock response instead of actually querying the database
 jest.mock('../../schema/leaderboard', () => ({
@@ -34,12 +35,14 @@ jest.mock('../../schema/project', () => ({
 		query: () => ({
 			eq: () => ({
 				limit: () => ({
-					exec: jest.fn().mockResolvedValue(MockProjectConfig)
+					exec: mockProjectConfigModelQuery
 				})
 			})
 		})
 	}
 }));
+
+let mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfig);
 
 // Set up an express router with the /leaderboard route
 const app = express();
@@ -58,6 +61,24 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF');
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		const message = JSON.parse(response.text).message;
+		expect(message).toBe('Validation: You must pass an epoch!');
+	});
+
+	test('GET /leaderboardCsv with ticker and epoch should fail', async () => {
+		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2');
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		const message = JSON.parse(response.text).message;
+		expect(message).toBe('Validation: You must pass a message!');
+	});
+
+	test('GET /leaderboardCsv with ticker, epoch, and message should fail', async () => {
+		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2&message=Requesting%20leaderboard%20download%20for%20epoch%20X');
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		const message = JSON.parse(response.text).message;
+		expect(message).toBe('Validation: You must pass a signature!');
 	});
 
 	test('GET /leaderboardCsv with just epoch should fail', async () => {
@@ -71,20 +92,17 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 	});
+
 });
 
 describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	test('GET /leaderboardCsv with valid request returns CSV', async () => {
-		const signature ='{\n' +
-			'    "pub_key": {\n' +
-			'        "type": "tendermint/PubKeySecp256k1",\n' +
-			'        "value": "A9OBlQaR2NfGfaHkL/fHi59kl0lUm3grF3KF8UOjltOz"\n' +
-			'    },\n' +
-			'    "signature": "B/RaaP030PPgePo0W7nELPt3XQGZjfQHF5Pfl1O9CqNGboFzv+HtaxKsMECX9ZQsh8XibomgpoL5g4HEUIOt0g=="\n' +
-			'}'
-		const base64encodedSignature = Buffer.from(signature).toString('base64');
-		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2&message=Requesting%20leaderboard%20download%20for%20epoch%20X&signature=' + base64encodedSignature);
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
 
+		const response = await request(app).get(url);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.type).toBe('text/csv');
 		expect(response.header['content-disposition']).toBe('attachment; filename="leaderboard.csv"');
@@ -128,4 +146,80 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 
 		});
 	});
+
+	test('GET /leaderboardCsv with invalid signature should fail', async () => {
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const invalidSignature = { ...MockSignature, signature: 'invalid_signature' };
+		const base64encodedInvalidSignature = Buffer.from(JSON.stringify(invalidSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedInvalidSignature}`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.FORBIDDEN);
+		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
+	});
+
+	test('GET /leaderboardCsv with invalid message should fail', async () => {
+		const invalidMessage = 'Invalid message';
+		const urlEncodedInvalidMessage = encodeURIComponent(invalidMessage);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedInvalidMessage}&signature=${base64encodedSignature}`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.FORBIDDEN);
+		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
+	});
+
+	test('GET /leaderboardCsv with invalid epoch should fail', async () => {
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=invalid_epoch&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		expect(response.body).toEqual({ status: 'fail', message: 'Validation: Epoch must be a number!' });
+	});
+
+	test('GET /leaderboardCsv with invalid wallet should fail', async () => {
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+
+		mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfigWithInvalidAdminWallet);
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.FORBIDDEN);
+		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
+	});
+
+	test('GET /leaderboardCsv with ticker that does not belong to user should fail', async () => {
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=INVALID_TICKER&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+		expect(response.body).toEqual({ linked: false, reason: 'Not authorized to access ticker' });
+	});
+
+	test('GET /leaderboardCsv with epoch that does not exist should fail', async () => {
+		const message = 'Requesting leaderboard download for epoch X';
+		const urlEncodedMessage = encodeURIComponent(message);
+		const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
+		const url = `/leaderboardCsv?ticker=INVALID_TICKER&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		expect(response.body).toEqual({ linked: false, reason: 'Invalid epoch' });
+	});
+
 });

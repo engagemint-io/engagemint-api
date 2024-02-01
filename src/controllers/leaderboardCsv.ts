@@ -22,6 +22,20 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 		});
 	}
 
+	if (!epoch) {
+		return res.status(StatusCodes.BAD_REQUEST).json({
+			status: 'fail',
+			message: 'Validation: You must pass an epoch!'
+		});
+	}
+
+	if (!message) {
+		return res.status(StatusCodes.BAD_REQUEST).json({
+			status: 'fail',
+			message: 'Validation: You must pass a message!'
+		});
+	}
+
 	if (!signature) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
 			status: 'fail',
@@ -35,8 +49,6 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 	const response = await query.exec();
 	const adminWalletAddress = response[AdminWalletAddressKey];
 
-	console.log('got adminWalletAddress');
-	console.log(Buffer.from(signature as string, 'base64').toString('utf-8'))
 	const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
 
 	//First, verify the signature
@@ -44,13 +56,6 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 
 	if (!isValidSignature) {
 		return res.status(StatusCodes.FORBIDDEN).send({ linked: false, reason: 'Signature is invalid.' });
-	}
-
-	if (!epoch) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass an epoch!'
-		});
 	}
 
 	if (isNaN(parseInt(epoch as string))) {
