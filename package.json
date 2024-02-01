@@ -59,6 +59,7 @@
     "prebuild": "yarn check-types && rm -rf build",
     "build": "esbuild src/handler.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outdir=buildApi",
     "postbuild": "zip -r apiLambda.zip buildApi",
-    "upload": "./scripts/upload.sh"
+    "upload": "./scripts/upload.sh",
+    "test:coverage": "yarn test --coverage"
   }
 }
