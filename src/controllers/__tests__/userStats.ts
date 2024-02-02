@@ -3,6 +3,8 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { MockLeaderboardRows, MockTwitterMeResponse } from '../../mocks';
 import userStats from '../userStats';
+import { TwitterApi } from 'twitter-api-v2';
+import { LeaderboardModel } from '../../schema';
 
 jest.mock('twitter-api-v2', () => ({
 	TwitterApi: jest.fn().mockImplementation(() => ({
@@ -25,6 +27,22 @@ jest.mock('../../schema/leaderboard', () => ({
 				})
 			})
 		})
+	}
+}));
+
+jest.mock('../../schema/leaderboard', () => ({
+	LeaderboardModel: {
+		query: jest.fn(() => ({
+			eq: jest.fn(() => ({
+				using: jest.fn(() => ({
+					where: jest.fn(() => ({
+						eq: jest.fn(() => ({
+							exec: jest.fn()
+						}))
+					}))
+				}))
+			}))
+		}))
 	}
 }));
 
@@ -54,7 +72,28 @@ describe('userStats Endpoint Tests', () => {
 		expect(response.body.message).toBe('Validation: You must pass in an X (Twitter) access token!');
 	});
 
+	test('should return internal service error if catch block hit', async () => {
+		const modelQuery = LeaderboardModel.query as jest.Mock;
+		modelQuery.mockResolvedValueOnce(null);
+		const response = await request(app).get('/userStats?ticker=TICKER&epoch=1&x_access_token=token');
+
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.error).toBe('Error fetching user rank!');
+	});
+
 	test('Successful request returns user stats', async () => {
+		const modelQuery = LeaderboardModel.query as jest.Mock;
+		modelQuery.mockImplementationOnce(() => ({
+			eq: () => ({
+				using: () => ({
+					where: () => ({
+						eq: () => ({
+							exec: jest.fn().mockResolvedValue(MockLeaderboardRows)
+						})
+					})
+				})
+			})
+		}));
 		const response = await request(app).get('/userStats?ticker=TICKER&epoch=1&x_access_token=token');
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.body.status).toBe('success');

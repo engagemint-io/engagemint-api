@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getXAuthUrl, registerUser, getUserStats, getLeaderboard, getXExchangeCode, getProjectConfig } from '../controllers';
+import { getXAuthUrl, registerUser, getUserStats, getLeaderboard, getXExchangeCode, getProjectConfig, isUserRegistered } from '../controllers';
 
 const apiRouter = Router();
 
@@ -20,5 +20,8 @@ apiRouter.get('/project-config', getProjectConfig);
 
 // Register an x (Twitter) account with a ticker
 apiRouter.post('/register', registerUser);
+
+// Check if a user is registered by ticker and twitter access token
+apiRouter.get('/is-user-registered', isUserRegistered);
 
 export default apiRouter;

@@ -1,3 +1,4 @@
+export { default as isUserRegistered } from './isUserRegistered';
 export { default as getProjectConfig } from './projectConfig';
 export { default as getXAuthUrl } from './xAuthUrl';
 export { default as getXExchangeCode } from './xExchangeCode';
