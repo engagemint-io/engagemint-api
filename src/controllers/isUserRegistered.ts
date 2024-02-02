@@ -4,23 +4,23 @@ import { TwitterApi } from 'twitter-api-v2';
 import { RegisteredUsersModel, RegisteredUserTickerKey, RegisteredUserTwitterIdKey } from '../schema';
 
 const isUserRegistered = async (req: Request, res: Response) => {
-	const { ticker, x_access_token } = req.query;
-
-	if (!ticker) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass in a ticker!'
-		});
-	}
-
-	if (!x_access_token) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass in an X (Twitter) access token!'
-		});
-	}
-
 	try {
+		const { ticker, x_access_token } = req.query;
+
+		if (!ticker) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				status: 'fail',
+				message: 'Validation: You must pass in a ticker!'
+			});
+		}
+
+		if (!x_access_token) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				status: 'fail',
+				message: 'Validation: You must pass in an X (Twitter) access token!'
+			});
+		}
+
 		const client = new TwitterApi(x_access_token as string);
 		const user: any = await client.v2.me();
 

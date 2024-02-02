@@ -26,7 +26,7 @@ const getProjectConfig = async (req: Request, res: Response) => {
 
 		return res.status(StatusCodes.OK).send({
 			status: 'success',
-			data: response || []
+			data: response?.[0] || []
 		});
 	} catch (error) {
 		console.error('error', error);

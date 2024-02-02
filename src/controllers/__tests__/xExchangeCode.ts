@@ -3,6 +3,7 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import XExchangeCode from '../xExchangeCode';
 import { MockTwitterKeys, MockTwitterMeResponse } from '../../mocks';
+import { getSecrets } from '../../utils';
 
 jest.mock('twitter-api-v2', () => ({
 	TwitterApi: jest.fn().mockImplementation(() => ({
@@ -56,6 +57,30 @@ describe('XExchangeCode Route', () => {
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 		expect(response.body.message).toBe('Validation: You must pass a redirect URI!');
+	});
+
+	test('GET /x-exchange-code with invalid AWS Secret Manager keys returns error', async () => {
+		const secrets = getSecrets as jest.Mock;
+		secrets.mockResolvedValueOnce({});
+		const response = await request(app).post('/x-exchange-code').send({
+			code: MockTwitterKeys.code,
+			codeVerifier: MockTwitterKeys.codeVerifier,
+			redirectUri: MockTwitterKeys.redirectUri
+		});
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.message).toBe('Processing: Error fetching x (Twitter) keys');
+	});
+
+	test('GET /x-exchange-code should return internal service error if catch block hit', async () => {
+		const secrets = getSecrets as jest.Mock;
+		secrets.mockResolvedValueOnce(null);
+		const response = await request(app).post('/x-exchange-code').send({
+			code: MockTwitterKeys.code,
+			codeVerifier: MockTwitterKeys.codeVerifier,
+			redirectUri: MockTwitterKeys.redirectUri
+		});
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.message).toBe('Error exchanging twitter code.');
 	});
 
 	test('POST /x-exchange-code with valid parameters returns access token', async () => {

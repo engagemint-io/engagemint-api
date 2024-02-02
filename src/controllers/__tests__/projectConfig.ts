@@ -1,19 +1,19 @@
 import request from 'supertest';
 import express from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { MockProjectConfig } from '../../mocks';
+import { MockProjectConfig, MockRegisteredUser } from '../../mocks';
 import { getProjectConfig } from '../index';
+import { ProjectConfigModel } from '../../schema';
 
-// Mock ProjectConfigModel.query().eq().limit().exec()
 jest.mock('../../schema', () => ({
 	ProjectConfigModel: {
-		query: () => ({
-			eq: () => ({
-				limit: () => ({
-					exec: jest.fn().mockResolvedValue(MockProjectConfig)
-				})
-			})
-		})
+		query: jest.fn(() => ({
+			eq: jest.fn(() => ({
+				limit: jest.fn(() => ({
+					exec: jest.fn()
+				}))
+			}))
+		}))
 	}
 }));
 
@@ -36,7 +36,30 @@ describe('GET /projectConfig', () => {
 		expect(response.body.message).toBe('Validation: You must pass a ticker!');
 	});
 
+	test('should fail with null value', async () => {
+		const modelQuery = ProjectConfigModel.query as jest.Mock;
+		modelQuery.mockImplementationOnce(() => ({
+			eq: () => ({
+				limit: () => ({
+					exec: null
+				})
+			})
+		}));
+		const response = await request(app).get(`/projectConfig?ticker=${MockProjectConfig.ticker}`);
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.status).toBe('error');
+		expect(response.body.message).toBe('Error getting project configuration.');
+	});
+
 	test('should return project configuration for valid ticker', async () => {
+		const modelQuery = ProjectConfigModel.query as jest.Mock;
+		modelQuery.mockImplementationOnce(() => ({
+			eq: () => ({
+				limit: () => ({
+					exec: jest.fn().mockResolvedValueOnce([MockProjectConfig])
+				})
+			})
+		}));
 		const response = await request(app).get(`/projectConfig?ticker=${MockProjectConfig.ticker}`);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.body.status).toBe('success');
