@@ -7,3 +7,5 @@ export const MockArbitraryInvalidSignature =
 
 export const MockSeiWalletAddress = 'sei14ae4g3422thcyuxler2ws3w25fpesrh2uqmgm9';
 export const MockTwitterId = '1234';
+
+export const MockRegisteredUser = { ticker: 'CLIFF', twitter_id: MockTwitterId, sei_wallet_address: MockSeiWalletAddress };

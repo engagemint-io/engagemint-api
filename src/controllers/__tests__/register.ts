@@ -7,8 +7,8 @@ import {
 	MockArbitraryInvalidSignatureInput,
 	MockArbitrarySignature,
 	MockProjectConfig,
+	MockRegisteredUser,
 	MockSeiWalletAddress,
-	MockTwitterId,
 	MockTwitterKeys
 } from '../../mocks';
 import { RegisteredUsersModel } from '../../schema';
@@ -93,7 +93,7 @@ describe('register function', () => {
 			eq: () => ({
 				where: () => ({
 					eq: () => ({
-						exec: jest.fn().mockResolvedValueOnce([{ ticker: 'CLIFF', twitter_id: MockTwitterId, sei_wallet_address: MockSeiWalletAddress }])
+						exec: jest.fn().mockResolvedValueOnce([MockRegisteredUser])
 					})
 				})
 			})
