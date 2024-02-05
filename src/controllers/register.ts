@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
 import { StatusCodes } from 'http-status-codes';
 
-import { RegisteredUsersModel, RegisteredUserTwitterIdKey, RegisteredUserTickerKey } from '../schema';
+import { RegisteredUsersModel, RegisteredUserTwitterIdKey, RegisteredUserTickerKey, ProjectConfigModel, ProjectConfigTickerKey } from '../schema';
 import { getSecrets, verifySignature } from '../utils';
 
 const register = async (req: Request, res: Response) => {
@@ -71,6 +71,21 @@ const register = async (req: Request, res: Response) => {
 				message: 'User already registered!'
 			});
 		}
+
+		// X (Twitter) pre-defined tweet verification
+		const projectConfigResponse = await ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).exec();
+
+		if (projectConfigResponse.length === 0) {
+			return res.status(StatusCodes.BAD_REQUEST).send({
+				status: 'fail',
+				message: 'Project not found!'
+			});
+		}
+
+		const projectConfig = projectConfigResponse[0];
+		const { pre_defined_tweet_text } = projectConfig;
+
+		// TODO: Implement pre-defined tweet verification
 
 		// Create user row
 		const newUser = new RegisteredUsersModel({

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getXAuthUrl, registerUser, getUserStats, getLeaderboard, getXExchangeCode, getProjectConfig, isUserRegistered } from '../controllers';
+import { getLeaderboard, getLeaderboardCsv, getProjectConfig, getUserStats, getXAuthUrl, getXExchangeCode, isUserRegistered, registerUser } from '../controllers';
 
 const apiRouter = Router();
 
@@ -11,6 +11,9 @@ apiRouter.post('/x-exchange-code', getXExchangeCode);
 
 // Return the leaderboard for a given ticker
 apiRouter.get('/leaderboard', getLeaderboard);
+
+// Return the leaderboard CSV for a given ticker
+apiRouter.get('/leaderboard-csv', getLeaderboardCsv);
 
 // Return the users position on the leaderboard
 apiRouter.get('/user-stats', getUserStats);

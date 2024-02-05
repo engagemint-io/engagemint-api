@@ -6,8 +6,12 @@ export const RegisteredUserTickerKey = 'ticker';
 export const RegisteredUserTwitterIdKey = 'twitter_id';
 export const RegisteredUserSeiWalletAddressKey = 'sei_wallet_address';
 
-export const RegisteredUsersModel = dynamoose.model(REGISTERED_USERS_TABLE_NAME, {
-	[RegisteredUserTickerKey]: { type: String, hashKey: true },
-	[RegisteredUserTwitterIdKey]: { type: String, rangeKey: true },
-	[RegisteredUserSeiWalletAddressKey]: String
-});
+export const RegisteredUsersModel = dynamoose.model(
+	REGISTERED_USERS_TABLE_NAME,
+	{
+		[RegisteredUserTickerKey]: { type: String, hashKey: true },
+		[RegisteredUserTwitterIdKey]: { type: String, rangeKey: true },
+		[RegisteredUserSeiWalletAddressKey]: String
+	},
+	{ create: false }
+);
