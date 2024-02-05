@@ -12,24 +12,28 @@ export const LeaderboardFavoritePointsKey = 'favorite_points';
 export const LeaderboardRetweetPointsKey = 'retweet_points';
 export const LeaderboardQuotePointsKey = 'quote_points';
 
-export const LeaderboardModel = dynamoose.model(LEADERBOARD_TABLE_NAME, {
-	[LeaderboardTickerEpochCompositeKey]: {
-		type: String,
-		hashKey: true
+export const LeaderboardModel = dynamoose.model(
+	LEADERBOARD_TABLE_NAME,
+	{
+		[LeaderboardTickerEpochCompositeKey]: {
+			type: String,
+			hashKey: true
+		},
+		[LeaderboardUserAccountIdKey]: {
+			type: String,
+			index: {
+				name: 'UserAccountIdIndex', // name of the secondary index
+				// rangeKey: LeaderboardTickerEpochCompositeKey, // Uncomment if querying by range key
+				project: true // Projects all attributes
+			}
+		},
+		[LeaderboardLastUpdatedAtKey]: String,
+		[LeaderboardTotalPointsKey]: Number,
+		[LeaderboardViewPointsKey]: Number,
+		[LeaderboardVideoViewPointsKey]: Number,
+		[LeaderboardFavoritePointsKey]: Number,
+		[LeaderboardRetweetPointsKey]: Number,
+		[LeaderboardQuotePointsKey]: Number
 	},
-	[LeaderboardUserAccountIdKey]: {
-		type: String,
-		index: {
-			name: 'UserAccountIdIndex', // name of the secondary index
-			// rangeKey: LeaderboardTickerEpochCompositeKey, // Uncomment if querying by range key
-			project: true // Projects all attributes
-		}
-	},
-	[LeaderboardLastUpdatedAtKey]: String,
-	[LeaderboardTotalPointsKey]: Number,
-	[LeaderboardViewPointsKey]: Number,
-	[LeaderboardVideoViewPointsKey]: Number,
-	[LeaderboardFavoritePointsKey]: Number,
-	[LeaderboardRetweetPointsKey]: Number,
-	[LeaderboardQuotePointsKey]: Number
-});
+	{ create: false }
+);

@@ -3,6 +3,9 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import XAuthUrl from '../xAuthUrl';
 import { MockTwitterKeys } from '../../mocks/xTwitter';
+import { RegisteredUsersModel } from '../../schema';
+import { MockRegisteredUser } from '../../mocks';
+import { getSecrets } from '../../utils';
 
 jest.mock('twitter-api-v2', () => ({
 	TwitterApi: jest.fn().mockImplementation(() => ({
@@ -37,6 +40,24 @@ describe('XAuthUrl Route', () => {
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 		expect(response.body.message).toBe('Validation: You must pass a valid redirect URL!');
+	});
+
+	test('GET /x-auth-url with invalid AWS Secret Manager keys returns error', async () => {
+		const secrets = getSecrets as jest.Mock;
+		secrets.mockImplementationOnce(() => ({}));
+		const response = await request(app).get(`/x-auth-url?redirectUrl=${MockTwitterKeys.redirectUri}`);
+
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.message).toBe('Processing: Error fetching x (Twitter) keys');
+	});
+
+	test('GET /x-auth-url should return internal service error if undefined value', async () => {
+		const secrets = getSecrets as jest.Mock;
+		secrets.mockImplementationOnce(() => null);
+		const response = await request(app).get(`/x-auth-url?redirectUrl=${MockTwitterKeys.redirectUri}`);
+
+		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+		expect(response.body.message).toBe('Error generating twitter login url');
 	});
 
 	test('GET /x-auth-url with valid redirectUrl returns auth URL and code verifier', async () => {

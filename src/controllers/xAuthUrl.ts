@@ -4,40 +4,40 @@ import { getSecrets } from '../utils';
 import { StatusCodes } from 'http-status-codes';
 
 const XAuthUrl = async (req: Request, res: Response) => {
-	const { redirectUrl } = req.query;
-
-	const ALLOWED_REDIRECT_URLS = [
-		'http://localhost:5173/',
-		'http://localhost:5173/leaderboard',
-		'http://192.168.0.160:5173/',
-		'http://192.168.0.160:5173/leaderboard'
-	];
-
-	if (!redirectUrl) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass a redirect URL!'
-		});
-	}
-
-	if (!ALLOWED_REDIRECT_URLS.includes(redirectUrl as string)) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass a valid redirect URL!'
-		});
-	}
-
-	const { X_CLIENT_ID, X_CLIENT_SECRET } = await getSecrets();
-
-	if (!X_CLIENT_ID || !X_CLIENT_SECRET) {
-		console.error('Error fetching x (Twitter) keys from AWS Secrets Manager');
-		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-			status: 'error',
-			message: 'Processing: Error fetching x (Twitter) keys'
-		});
-	}
-
 	try {
+		const { redirectUrl } = req.query;
+
+		const ALLOWED_REDIRECT_URLS = [
+			'http://localhost:5173/',
+			'http://localhost:5173/leaderboard',
+			'http://192.168.0.160:5173/',
+			'http://192.168.0.160:5173/leaderboard'
+		];
+
+		if (!redirectUrl) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				status: 'fail',
+				message: 'Validation: You must pass a redirect URL!'
+			});
+		}
+
+		if (!ALLOWED_REDIRECT_URLS.includes(redirectUrl as string)) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				status: 'fail',
+				message: 'Validation: You must pass a valid redirect URL!'
+			});
+		}
+
+		const { X_CLIENT_ID, X_CLIENT_SECRET } = await getSecrets();
+
+		if (!X_CLIENT_ID || !X_CLIENT_SECRET) {
+			console.error('Error fetching x (Twitter) keys from AWS Secrets Manager');
+			return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+				status: 'error',
+				message: 'Processing: Error fetching x (Twitter) keys'
+			});
+		}
+
 		const client = new TwitterApi({
 			clientId: X_CLIENT_ID,
 			clientSecret: X_CLIENT_SECRET

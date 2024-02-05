@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { ProjectConfigModel, ProjectConfigTickerKey } from '../schema/project';
+import { ProjectConfigModel, ProjectConfigTickerKey } from '../schema';
 
 const getProjectConfig = async (req: Request, res: Response) => {
 	const { ticker } = req.query;
@@ -17,9 +17,16 @@ const getProjectConfig = async (req: Request, res: Response) => {
 
 		const response = await query.exec();
 
+		if (!response) {
+			return res.status(StatusCodes.BAD_REQUEST).json({
+				status: 'fail',
+				message: 'Validation: No ticker found!'
+			});
+		}
+
 		return res.status(StatusCodes.OK).send({
 			status: 'success',
-			data: response || []
+			data: response?.[0] || []
 		});
 	} catch (error) {
 		console.error('error', error);

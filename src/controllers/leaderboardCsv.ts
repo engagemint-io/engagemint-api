@@ -1,10 +1,5 @@
 import { Request, Response } from 'express';
-import {
-	LeaderboardTickerEpochCompositeKey,
-	LeaderboardModel,
-	ProjectConfigModel,
-	ProjectConfigTickerKey, AdminWalletAddressKey
-} from '../schema';
+import { LeaderboardTickerEpochCompositeKey, LeaderboardModel, ProjectConfigModel, ProjectConfigTickerKey, AdminWalletAddressKey } from '../schema';
 import { StatusCodes } from 'http-status-codes';
 import { parse } from 'json2csv';
 import { verifySignature } from '../utils';
@@ -12,7 +7,7 @@ import { verifySignature } from '../utils';
 const DEFAULT_QUERY_RESPONSE_LIMIT: number = parseInt(process.env.LEADERBOARD_CSV_RESPONSE_LIMIT as string) || 50;
 
 const leaderboardCsv = async (req: Request, res: Response) => {
-	const { ticker, epoch, signature, message } = req.query;
+	const { ticker, epoch, signature } = req.query;
 
 	if (!ticker) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
@@ -35,13 +30,6 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 		});
 	}
 
-	if (!message) {
-		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
-			message: 'Validation: You must pass a message!'
-		});
-	}
-
 	if (!signature) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
 			status: 'fail',
@@ -53,21 +41,23 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 	const query = ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1);
 
 	const response = await query.exec();
-	const adminWalletAddress = response[AdminWalletAddressKey];
+	const adminWalletAddress = response[0][AdminWalletAddressKey];
+
+	console.log('response', response);
 
 	const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
 
-	//First, verify the signature
-	const isValidSignature = await verifySignature(adminWalletAddress, message, parsedSignature);
+	//First, verify the signature to ensure that the request is coming from the project admin
+	const isValidSignature = await verifySignature(adminWalletAddress, `Requesting $${ticker} leaderboard download for epoch ${epoch}`, parsedSignature);
 
 	if (!isValidSignature) {
-		return res.status(StatusCodes.FORBIDDEN).send({ linked: false, reason: 'Signature is invalid.' });
+		return res.status(StatusCodes.FORBIDDEN).send({ status: 'fail', reason: 'Signature is invalid.' });
 	}
 
 	// Verify that the ticker belongs to the user
-	const configTicker = response[ProjectConfigTickerKey];
+	const configTicker = response[0][ProjectConfigTickerKey];
 	if (configTicker !== ticker) {
-		return res.status(StatusCodes.UNAUTHORIZED).send({ linked: false, reason: 'Unauthorized to access ticker.' });
+		return res.status(StatusCodes.UNAUTHORIZED).send({ status: 'fail', reason: 'Unauthorized to access ticker.' });
 	}
 
 	try {
@@ -89,19 +79,22 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 			lastKey = response.lastKey;
 		} while (lastKey);
 
+		if (allResults.length == 0) {
+			return res.status(StatusCodes.OK).send({ status: 'success', reason: `No leaderboard items found for $${ticker} and epoch ${epoch}.` });
+		}
 		// Convert the JSON response to CSV
 		const csv = parse(allResults);
 
 		// Set the response headers to indicate a file attachment
-		res.attachment('leaderboard.csv');
+		res.attachment(`$${ticker}-${epoch}.csv`);
 		res.type('text/csv');
-		// Send the CSV data
+
 		return res.status(StatusCodes.OK).send(csv);
 	} catch (error) {
 		console.error('error', error);
 		return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
 			status: 'error',
-			message: 'Error getting leaderboard for ticker.'
+			message: `Error downloading leaderboard for ${ticker}.`
 		});
 	}
 };
