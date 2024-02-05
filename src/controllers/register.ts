@@ -2,9 +2,8 @@ import { Request, Response } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
 import { StatusCodes } from 'http-status-codes';
 
-import { RegisteredUsersModel, RegisteredUserTwitterIdKey, RegisteredUserTickerKey } from '../schema';
+import { RegisteredUsersModel, RegisteredUserTwitterIdKey, RegisteredUserTickerKey, ProjectConfigModel, ProjectConfigTickerKey } from '../schema';
 import { getSecrets, verifySignature } from '../utils';
-import { StdSignature } from '@cosmjs/amino';
 
 const register = async (req: Request, res: Response) => {
 	const { x_access_token, ticker, signature, sei_wallet_address: sei_wallet_address } = req.query;
@@ -54,7 +53,7 @@ const register = async (req: Request, res: Response) => {
 		const isValidSignature = await verifySignature(String(sei_wallet_address), String(sei_wallet_address), parsedSignature);
 
 		if (!isValidSignature) {
-			return res.status(StatusCodes.FORBIDDEN).send({ linked: false, reason: 'Signature is invalid.' });
+			return res.status(StatusCodes.FORBIDDEN).send({ status: 'fail', reason: 'Forbidden, invalid signature!' });
 		}
 
 		const client = new TwitterApi(x_access_token as string);
@@ -73,6 +72,21 @@ const register = async (req: Request, res: Response) => {
 			});
 		}
 
+		// X (Twitter) pre-defined tweet verification
+		const projectConfigResponse = await ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).exec();
+
+		if (projectConfigResponse.length === 0) {
+			return res.status(StatusCodes.BAD_REQUEST).send({
+				status: 'fail',
+				message: 'Project not found!'
+			});
+		}
+
+		const projectConfig = projectConfigResponse[0];
+		const { pre_defined_tweet_text } = projectConfig;
+
+		// TODO: Implement pre-defined tweet verification
+
 		// Create user row
 		const newUser = new RegisteredUsersModel({
 			ticker: ticker,
@@ -89,8 +103,8 @@ const register = async (req: Request, res: Response) => {
 				user: newUser
 			}
 		});
-	} catch (error) {
-		console.error('Error in /register endpoint', error);
+	} catch (error: any) {
+		console.log('Error in /register endpoint', error.message);
 		res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ verified: false, error: 'Error registering user!' });
 	}
 };
