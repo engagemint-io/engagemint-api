@@ -40,10 +40,8 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 	// Get the admin wallet address from the database
 	const query = ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1);
 
-	const response = await query.exec();
-	const adminWalletAddress = response[0][AdminWalletAddressKey];
-
-	console.log('response', response);
+	const configResponse = await query.exec();
+	const adminWalletAddress = configResponse[0][AdminWalletAddressKey];
 
 	const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
 
@@ -55,7 +53,7 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 	}
 
 	// Verify that the ticker belongs to the user
-	const configTicker = response[0][ProjectConfigTickerKey];
+	const configTicker = configResponse[0][ProjectConfigTickerKey];
 	if (configTicker !== ticker) {
 		return res.status(StatusCodes.UNAUTHORIZED).send({ status: 'fail', reason: 'Unauthorized to access ticker.' });
 	}

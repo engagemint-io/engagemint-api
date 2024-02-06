@@ -16,7 +16,8 @@ import { RegisteredUsersModel } from '../../schema';
 jest.mock('twitter-api-v2', () => ({
 	TwitterApi: jest.fn().mockImplementation(() => ({
 		v2: {
-			me: jest.fn().mockResolvedValue({ data: { id: '123' } })
+			me: jest.fn().mockResolvedValue({ data: { id: '123' } }),
+			search: jest.fn().mockResolvedValue({tweets: []})
 		}
 	}))
 }));
@@ -36,8 +37,19 @@ jest.mock('../../schema', () => ({
 				}))
 			}))
 		}))
+	},
+	ProjectConfigModel: {
+		query: jest.fn(() => ({
+			eq: jest.fn(() => ({
+				limit: jest.fn(() => ({
+					exec: jest.fn().mockResolvedValue([MockProjectConfig])
+				}))
+			}))
+		}))
 	}
 }));
+
+// let mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfig);
 
 describe('register function', () => {
 	const app = express();
@@ -104,5 +116,14 @@ describe('register function', () => {
 		);
 		expect(response.status).toBe(StatusCodes.FORBIDDEN);
 		expect(response.body.message).toBe('User already registered!');
+	});
+
+	// test to check  if user has tweeted the ticker required pre-defined tweet
+	test('should return error if user has not tweeted the ticker required pre-defined tweet', async () => {
+		const response = await request(app).get(
+			`/register?ticker=${MockProjectConfig.ticker}&x_access_token=${MockTwitterKeys.accessToken}&signature=${MockArbitrarySignature}&sei_wallet_address=${MockSeiWalletAddress}`
+		);
+		expect(response.status).toBe(StatusCodes.FORBIDDEN);
+		expect(response.body.message).toBe('User has not tweeted the required tweet!');
 	});
 });

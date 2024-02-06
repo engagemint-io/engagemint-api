@@ -1,5 +1,5 @@
 import { fromBase64 } from '@cosmjs/encoding';
-import { verifyADR36Amino } from '@sei-js/core/dist/lib/utils/signing';
+import { verifyADR36Amino } from '@keplr-wallet/cosmos';
 
 export const verifySignature = async (
 	signerAddress: string,
