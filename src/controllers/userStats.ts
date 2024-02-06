@@ -47,7 +47,8 @@ const userStats = async (req: Request, res: Response) => {
 		return res.status(StatusCodes.OK).send({
 			status: 'success',
 			data: {
-				stats: userStatus
+				stats: userStatus,
+				xAccountId: id
 			}
 		});
 	} catch (error) {

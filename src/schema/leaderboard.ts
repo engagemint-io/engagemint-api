@@ -9,8 +9,10 @@ export const LeaderboardUserAccountIdKey = 'user_account_id';
 export const LeaderboardViewPointsKey = 'view_points';
 export const LeaderboardVideoViewPointsKey = 'video_view_points';
 export const LeaderboardFavoritePointsKey = 'favorite_points';
+export const LeaderboardReplyPointsKey = 'reply_points';
 export const LeaderboardRetweetPointsKey = 'retweet_points';
 export const LeaderboardQuotePointsKey = 'quote_points';
+export const LeaderboardUsernameKey = 'username';
 
 export const LeaderboardModel = dynamoose.model(
 	LEADERBOARD_TABLE_NAME,
@@ -32,8 +34,10 @@ export const LeaderboardModel = dynamoose.model(
 		[LeaderboardViewPointsKey]: Number,
 		[LeaderboardVideoViewPointsKey]: Number,
 		[LeaderboardFavoritePointsKey]: Number,
+		[LeaderboardReplyPointsKey]: Number,
 		[LeaderboardRetweetPointsKey]: Number,
-		[LeaderboardQuotePointsKey]: Number
+		[LeaderboardQuotePointsKey]: Number,
+		[LeaderboardUsernameKey]: String
 	},
 	{ create: false }
 );
