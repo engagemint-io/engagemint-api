@@ -11,7 +11,9 @@ const XAuthUrl = async (req: Request, res: Response) => {
 			'http://localhost:5173/',
 			'http://localhost:5173/leaderboard',
 			'http://192.168.0.160:5173/',
-			'http://192.168.0.160:5173/leaderboard'
+			'http://192.168.0.160:5173/leaderboard',
+			'https://template.engagemint.io/',
+			'https://template.engagemint.io/leaderboard'
 		];
 
 		if (!redirectUrl) {
