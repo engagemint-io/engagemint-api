@@ -3,7 +3,12 @@ import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import csvParser from 'csv-parser';
 
-import { MockLeaderboardRows, MockProjectConfig, MockProjectConfigWithInvalidAdminWallet } from '../../mocks';
+import {
+	MockLeaderboardRows,
+	MockProjectConfig,
+	MockProjectConfigOtherTicker,
+	MockProjectConfigWithInvalidAdminWallet
+} from '../../mocks';
 import { getLeaderboardCsv } from '../index';
 import {
 	LeaderboardFavoritePointsKey, LeaderboardLastUpdatedAtKey, LeaderboardQuotePointsKey, LeaderboardRetweetPointsKey,
@@ -42,7 +47,7 @@ jest.mock('../../schema/project', () => ({
 	}
 }));
 
-let mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfig);
+let mockProjectConfigModelQuery = jest.fn().mockResolvedValue([MockProjectConfig]);
 
 // Set up an express router with the /leaderboard route
 const app = express();
@@ -63,14 +68,6 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 		const message = JSON.parse(response.text).message;
 		expect(message).toBe('Validation: You must pass an epoch!');
-	});
-
-	test('GET /leaderboardCsv with ticker and epoch should fail', async () => {
-		const response = await request(app).get('/leaderboardCsv?ticker=CLIFF&epoch=2');
-
-		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-		const message = JSON.parse(response.text).message;
-		expect(message).toBe('Validation: You must pass a message!');
 	});
 
 	test('GET /leaderboardCsv with ticker, epoch, and message should fail', async () => {
@@ -98,17 +95,17 @@ describe('PARAMETER_VALIDATION: /leaderboardCsv', () => {
 describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 
 	// Reused query params
-	const message = 'Requesting leaderboard download for epoch X';
-	const urlEncodedMessage = encodeURIComponent(message);
 	const base64encodedSignature = Buffer.from(JSON.stringify(MockSignature)).toString('base64');
 
 	test('GET /leaderboardCsv with valid request returns CSV', async () => {
-		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+		const ticker = "CLIFF";
+		const epoch = 2;
+		const url = `/leaderboardCsv?ticker=${ticker}&epoch=${epoch}&signature=${base64encodedSignature}`;
 
 		const response = await request(app).get(url);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.type).toBe('text/csv');
-		expect(response.header['content-disposition']).toBe('attachment; filename="leaderboard.csv"');
+		expect(response.header['content-disposition']).toBe(`attachment; filename="$${ticker}-${epoch}.csv"`);
 
 		// Convert the CSV content to a stream
 		const csvStream = require('stream').Readable.from(response.text);
@@ -152,27 +149,16 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	test('GET /leaderboardCsv with invalid signature should fail', async () => {
 		const invalidSignature = { ...MockSignature, signature: 'invalid_signature' };
 		const base64encodedInvalidSignature = Buffer.from(JSON.stringify(invalidSignature)).toString('base64');
-		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedInvalidSignature}`;
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&signature=${base64encodedInvalidSignature}`;
 
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.FORBIDDEN);
-		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
-	});
-
-	test('GET /leaderboardCsv with invalid message should fail', async () => {
-		const invalidMessage = 'Invalid message';
-		const urlEncodedInvalidMessage = encodeURIComponent(invalidMessage);
-		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedInvalidMessage}&signature=${base64encodedSignature}`;
-
-		const response = await request(app).get(url);
-
-		expect(response.status).toBe(StatusCodes.FORBIDDEN);
-		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
+		expect(response.body).toEqual({ status: 'fail', reason: 'Signature is invalid.' });
 	});
 
 	test('GET /leaderboardCsv with invalid epoch should fail', async () => {
-		const url = `/leaderboardCsv?ticker=CLIFF&epoch=invalid_epoch&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=invalid_epoch&signature=${base64encodedSignature}`;
 
 		const response = await request(app).get(url);
 
@@ -181,23 +167,23 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 	});
 
 	test('GET /leaderboardCsv with invalid wallet should fail', async () => {
-		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
-		mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfigWithInvalidAdminWallet);
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&signature=${base64encodedSignature}`;
+		mockProjectConfigModelQuery = jest.fn().mockResolvedValue([MockProjectConfigWithInvalidAdminWallet]);
 
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.FORBIDDEN);
-		expect(response.body).toEqual({ linked: false, reason: 'Signature is invalid.' });
+		expect(response.body).toEqual({ status: 'fail', reason: 'Signature is invalid.' });
 	});
 
 	test('GET /leaderboardCsv with ticker that does not belong to user should fail', async () => {
-		const url = `/leaderboardCsv?ticker=INVALID_TICKER&epoch=2&message=${urlEncodedMessage}&signature=${base64encodedSignature}`;
-		mockProjectConfigModelQuery = jest.fn().mockResolvedValue(MockProjectConfig);
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&signature=${base64encodedSignature}`;
+		mockProjectConfigModelQuery = jest.fn().mockResolvedValue([MockProjectConfigOtherTicker]);
 
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-		expect(response.body).toEqual({ linked: false, reason: 'Unauthorized to access ticker.' });
+		expect(response.body).toEqual({ status: 'fail', reason: 'Unauthorized to access ticker.' });
 	});
 
 });

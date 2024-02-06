@@ -65,7 +65,7 @@ const register = async (req: Request, res: Response) => {
 		const results = await RegisteredUsersModel.query(RegisteredUserTickerKey).eq(ticker).where(RegisteredUserTwitterIdKey).eq(id).exec();
 
 		// If user exists, return error
-		if (results.length > 0) {
+		if (results && results.length > 0) {
 			return res.status(StatusCodes.FORBIDDEN).send({
 				status: 'fail',
 				message: 'User already registered!'
@@ -73,7 +73,7 @@ const register = async (req: Request, res: Response) => {
 		}
 
 		// X (Twitter) pre-defined tweet verification
-		const projectConfigResponse = await ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).exec();
+		const projectConfigResponse = await ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1).exec();
 
 		if (projectConfigResponse.length === 0) {
 			return res.status(StatusCodes.BAD_REQUEST).send({
@@ -85,7 +85,14 @@ const register = async (req: Request, res: Response) => {
 		const projectConfig = projectConfigResponse[0];
 		const { pre_defined_tweet_text } = projectConfig;
 
-		// TODO: Implement pre-defined tweet verification
+		const tweetsResponse = await client.v2.search({	query: `from:${user.id} ${pre_defined_tweet_text}` });
+		const tweets = tweetsResponse.tweets;
+		if (!tweets || tweets.length === 0) {
+			return res.status(StatusCodes.FORBIDDEN).send({
+				status: 'fail',
+				message: 'User has not tweeted the required tweet!'
+			});
+		}
 
 		// Create user row
 		const newUser = new RegisteredUsersModel({

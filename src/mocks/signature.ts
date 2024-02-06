@@ -3,5 +3,5 @@ export const MockSignature = {
 		type: "tendermint/PubKeySecp256k1",
 		value: "A9OBlQaR2NfGfaHkL/fHi59kl0lUm3grF3KF8UOjltOz"
 	},
-	signature: "B/RaaP030PPgePo0W7nELPt3XQGZjfQHF5Pfl1O9CqNGboFzv+HtaxKsMECX9ZQsh8XibomgpoL5g4HEUIOt0g=="
+	signature: "c3rRBSO+IIR0AtWL79GYnwrK2vbHeTEYBfUkTvleWvN0NFYYW6Pxh1Qvm6HhwevGWnw8Tv3N3fGzwh9aQhnsmA=="
 }
