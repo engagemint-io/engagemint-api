@@ -48,7 +48,7 @@ const leaderboard = async (req: Request, res: Response) => {
 
 	try {
 		const queryResponseLimit = parseInt(limit as string) || DEFAULT_QUERY_RESPONSE_LIMIT;
-		const tickerEpochComposite = `${epoch}#${ticker}`;
+		const tickerEpochComposite = `${ticker}#${epoch}`;
 
 		const query = LeaderboardModel.query(LeaderboardTickerEpochCompositeKey).eq(tickerEpochComposite).limit(queryResponseLimit);
 

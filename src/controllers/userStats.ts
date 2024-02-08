@@ -28,7 +28,7 @@ const userStats = async (req: Request, res: Response) => {
 			});
 		}
 
-		const tickerEpochComposite = `${epoch}#${ticker}`;
+		const tickerEpochComposite = `${ticker}#${epoch}`;
 
 		const client = new TwitterApi(x_access_token as string);
 		const user: any = await client.v2.me();

@@ -59,7 +59,7 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 	}
 
 	try {
-		const tickerEpochComposite = `${epoch}#${ticker}`;
+		const tickerEpochComposite = `${ticker}#${epoch}`;
 
 		let lastKey;
 		let allResults: any[] = [];
