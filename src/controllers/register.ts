@@ -85,7 +85,7 @@ const register = async (req: Request, res: Response) => {
 		const projectConfig = projectConfigResponse[0];
 		const { pre_defined_tweet_text } = projectConfig;
 
-		const tweetsResponse = await client.v2.search({	query: `from:${user.id} ${pre_defined_tweet_text}` });
+		const tweetsResponse = await client.v2.search({	query: `from:${user.data.id} "${pre_defined_tweet_text}"` });
 		const tweets = tweetsResponse.tweets;
 		if (!tweets || tweets.length === 0) {
 			return res.status(StatusCodes.FORBIDDEN).send({
