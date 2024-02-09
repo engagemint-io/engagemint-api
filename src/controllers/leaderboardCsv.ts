@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
-import { LeaderboardTickerEpochCompositeKey, LeaderboardModel, ProjectConfigModel, ProjectConfigTickerKey, AdminWalletAddressKey } from '../schema';
+import {
+	LeaderboardTickerEpochCompositeKey,
+	LeaderboardModel,
+	ProjectConfigModel,
+	ProjectConfigTickerKey,
+	AdminWalletAddressKey
+} from '../schema';
 import { StatusCodes } from 'http-status-codes';
 import { parse } from 'json2csv';
 import { verifySignature } from '../utils';
@@ -11,54 +17,67 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 
 	if (!ticker) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
+			status: 'error',
 			message: 'Validation: You must pass a ticker!'
 		});
 	}
 
 	if (!epoch) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
+			status: 'error',
 			message: 'Validation: You must pass an epoch!'
 		});
 	}
 
 	if (isNaN(parseInt(epoch as string))) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
+			status: 'error',
 			message: 'Validation: Epoch must be a number!'
 		});
 	}
 
 	if (!signature) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
-			status: 'fail',
+			status: 'error',
 			message: 'Validation: You must pass a signature!'
 		});
 	}
-
-	// Get the admin wallet address from the database
-	const query = ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1);
-
-	const configResponse = await query.exec();
-	const adminWalletAddress = configResponse[0][AdminWalletAddressKey];
-
-	const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
-
-	//First, verify the signature to ensure that the request is coming from the project admin
-	const isValidSignature = await verifySignature(adminWalletAddress, `Requesting $${ticker} leaderboard download for epoch ${epoch}`, parsedSignature);
-
-	if (!isValidSignature) {
-		return res.status(StatusCodes.FORBIDDEN).send({ status: 'fail', reason: 'Signature is invalid.' });
-	}
-
-	// Verify that the ticker belongs to the user
-	const configTicker = configResponse[0][ProjectConfigTickerKey];
-	if (configTicker !== ticker) {
-		return res.status(StatusCodes.UNAUTHORIZED).send({ status: 'fail', reason: 'Unauthorized to access ticker.' });
-	}
-
 	try {
+
+		// Get the admin wallet address from the database
+		const query = ProjectConfigModel.query(ProjectConfigTickerKey).eq(ticker).limit(1);
+
+		const configResponse = await query.exec();
+		const adminWalletAddress = configResponse[0][AdminWalletAddressKey];
+
+		let parsedSignature;
+
+		try {
+			parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
+		} catch (error) {
+			console.error('error', error);
+			return res.status(StatusCodes.BAD_REQUEST).send({
+				status: 'error',
+				message: 'Signature is invalid.'
+			});
+		}
+
+		//First, verify the signature to ensure that the request is coming from the project admin
+		const isValidSignature = await verifySignature(adminWalletAddress, `Requesting $${ticker} leaderboard download for epoch ${epoch}`, parsedSignature);
+
+		if (!isValidSignature) {
+			return res.status(StatusCodes.FORBIDDEN).send({
+				status: 'error',
+				reason: 'Signature could not be verified.'
+			});
+		}
+
+		// Verify that the ticker belongs to the user
+		const configTicker = configResponse[0][ProjectConfigTickerKey];
+		if (configTicker !== ticker) {
+			return res.status(StatusCodes.UNAUTHORIZED).send({ status: 'error', reason: 'Unauthorized to access ticker.' });
+		}
+
 		const tickerEpochComposite = `${ticker}#${epoch}`;
 
 		let lastKey;
@@ -78,7 +97,10 @@ const leaderboardCsv = async (req: Request, res: Response) => {
 		} while (lastKey);
 
 		if (allResults.length == 0) {
-			return res.status(StatusCodes.OK).send({ status: 'success', reason: `No leaderboard items found for $${ticker} and epoch ${epoch}.` });
+			return res.status(StatusCodes.OK).send({
+				status: 'success',
+				reason: `No leaderboard items found for $${ticker} and epoch ${epoch}.`
+			});
 		}
 		// Convert the JSON response to CSV
 		const csv = parse(allResults);
