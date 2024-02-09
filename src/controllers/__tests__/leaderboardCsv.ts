@@ -154,7 +154,7 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.FORBIDDEN);
-		expect(response.body).toEqual({ status: 'fail', reason: 'Signature is invalid.' });
+		expect(response.body).toEqual({ status: 'error', reason: 'Signature could not be verified.' });
 	});
 
 	test('GET /leaderboardCsv with invalid epoch should fail', async () => {
@@ -163,7 +163,7 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-		expect(response.body).toEqual({ status: 'fail', message: 'Validation: Epoch must be a number!' });
+		expect(response.body).toEqual({ status: 'error', message: 'Validation: Epoch must be a number!' });
 	});
 
 	test('GET /leaderboardCsv with invalid wallet should fail', async () => {
@@ -173,7 +173,7 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.FORBIDDEN);
-		expect(response.body).toEqual({ status: 'fail', reason: 'Signature is invalid.' });
+		expect(response.body).toEqual({ status: 'error', reason: 'Signature could not be verified.' });
 	});
 
 	test('GET /leaderboardCsv with ticker that does not belong to user should fail', async () => {
@@ -183,7 +183,7 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 		const response = await request(app).get(url);
 
 		expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-		expect(response.body).toEqual({ status: 'fail', reason: 'Unauthorized to access ticker.' });
+		expect(response.body).toEqual({ status: 'error', reason: 'Unauthorized to access ticker.' });
 	});
 
 });
