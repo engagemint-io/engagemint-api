@@ -146,6 +146,15 @@ describe('LOGIC_VALIDATION: /leaderboardCsv', () => {
 		});
 	});
 
+	test('GET /leaderboardCsv with malformed signature should fail', async () => {
+		const url = `/leaderboardCsv?ticker=CLIFF&epoch=2&signature=sdsdf`;
+
+		const response = await request(app).get(url);
+
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+		expect(response.body).toEqual({ status: 'error', message: 'Signature is invalid.' });
+	});
+
 	test('GET /leaderboardCsv with invalid signature should fail', async () => {
 		const invalidSignature = { ...MockSignature, signature: 'invalid_signature' };
 		const base64encodedInvalidSignature = Buffer.from(JSON.stringify(invalidSignature)).toString('base64');
