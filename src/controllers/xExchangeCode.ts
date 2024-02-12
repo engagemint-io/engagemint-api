@@ -50,14 +50,15 @@ const XExchangeCode = async (req: Request, res: Response) => {
 			'user.fields': ['profile_image_url']
 		});
 
-		const { profile_image_url } = user.data;
+		const { profile_image_url, id } = user.data;
 
 		res.status(StatusCodes.OK).json({
 			status: 'success',
 			data: {
 				xAccessToken: accessToken,
 				expiresIn,
-				profileImageUrl: profile_image_url
+				profileImageUrl: profile_image_url,
+				xUserId: id
 			}
 		});
 	} catch (e: any) {

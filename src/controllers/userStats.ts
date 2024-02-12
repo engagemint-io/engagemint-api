@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { TwitterApi } from 'twitter-api-v2';
 import { LeaderboardModel, LeaderboardTickerEpochCompositeKey, LeaderboardUserAccountIdKey } from '../schema';
 
 const userStats = async (req: Request, res: Response) => {
 	try {
-		const { ticker, epoch, x_access_token } = req.query;
+		const { ticker, epoch, x_user_id } = req.query;
 
 		if (!ticker) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
@@ -21,22 +20,17 @@ const userStats = async (req: Request, res: Response) => {
 			});
 		}
 
-		if (!x_access_token) {
+		if (!x_user_id) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				status: 'fail',
-				message: 'Validation: You must pass in an X (Twitter) access token!'
+				message: 'Validation: You must pass in an X (Twitter) user id!'
 			});
 		}
 
 		const tickerEpochComposite = `${ticker}#${epoch}`;
 
-		const client = new TwitterApi(x_access_token as string);
-		const user: any = await client.v2.me();
-
-		const { id } = user.data;
-
 		const results = await LeaderboardModel.query(LeaderboardUserAccountIdKey)
-			.eq(id)
+			.eq(x_user_id)
 			.using('UserAccountIdIndex')
 			.where(LeaderboardTickerEpochCompositeKey)
 			.eq(tickerEpochComposite)
@@ -47,8 +41,7 @@ const userStats = async (req: Request, res: Response) => {
 		return res.status(StatusCodes.OK).send({
 			status: 'success',
 			data: {
-				stats: userStatus,
-				xAccountId: id
+				stats: userStatus
 			}
 		});
 	} catch (error) {

@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { TwitterApi } from 'twitter-api-v2';
 import { RegisteredUsersModel, RegisteredUserTickerKey, RegisteredUserTwitterIdKey } from '../schema';
 
 const isUserRegistered = async (req: Request, res: Response) => {
 	try {
-		const { ticker, x_access_token } = req.query;
+		const { ticker, x_user_id } = req.query;
 
 		if (!ticker) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
@@ -14,19 +13,14 @@ const isUserRegistered = async (req: Request, res: Response) => {
 			});
 		}
 
-		if (!x_access_token) {
+		if (!x_user_id) {
 			return res.status(StatusCodes.BAD_REQUEST).json({
 				status: 'fail',
-				message: 'Validation: You must pass in an X (Twitter) access token!'
+				message: 'Validation: You must pass in an X (Twitter) user id!'
 			});
 		}
 
-		const client = new TwitterApi(x_access_token as string);
-		const user: any = await client.v2.me();
-
-		const { id } = user.data;
-
-		const results = await RegisteredUsersModel.query(RegisteredUserTickerKey).eq(ticker).where(RegisteredUserTwitterIdKey).eq(id).exec();
+		const results = await RegisteredUsersModel.query(RegisteredUserTickerKey).eq(ticker).where(RegisteredUserTwitterIdKey).eq(x_user_id).exec();
 
 		return res.status(StatusCodes.OK).send({
 			status: 'success',

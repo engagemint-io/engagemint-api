@@ -69,13 +69,13 @@ describe('userStats Endpoint Tests', () => {
 		const response = await request(app).get('/userStats?epoch=1&ticker=CLIFF');
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 		expect(response.body.status).toBe('fail');
-		expect(response.body.message).toBe('Validation: You must pass in an X (Twitter) access token!');
+		expect(response.body.message).toBe('Validation: You must pass in an X (Twitter) user id!');
 	});
 
 	test('should return internal service error if catch block hit', async () => {
 		const modelQuery = LeaderboardModel.query as jest.Mock;
 		modelQuery.mockResolvedValueOnce(null);
-		const response = await request(app).get('/userStats?ticker=TICKER&epoch=1&x_access_token=token');
+		const response = await request(app).get(`/userStats?ticker=TICKER&epoch=1&x_user_id=${MockTwitterMeResponse.data.id}`);
 
 		expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
 		expect(response.body.error).toBe('Error fetching user rank!');
@@ -94,7 +94,7 @@ describe('userStats Endpoint Tests', () => {
 				})
 			})
 		}));
-		const response = await request(app).get('/userStats?ticker=TICKER&epoch=1&x_access_token=token');
+		const response = await request(app).get(`/userStats?ticker=TICKER&epoch=1&x_user_id=${MockTwitterMeResponse.data.id}`);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.body.status).toBe('success');
 		expect(response.body.data.stats).toEqual(MockLeaderboardRows[0]);

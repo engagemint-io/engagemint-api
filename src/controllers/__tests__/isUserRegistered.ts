@@ -43,7 +43,7 @@ describe('is user registered Endpoint Tests', () => {
 		const response = await request(app).get('/is-user-registered?ticker=CLIFF');
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 		expect(response.body.status).toBe('fail');
-		expect(response.body.message).toBe('Validation: You must pass in an X (Twitter) access token!');
+		expect(response.body.message).toBe('Validation: You must pass in an X (Twitter) user id!');
 	});
 
 	test('Unsuccessful request returns true', async () => {
@@ -58,7 +58,7 @@ describe('is user registered Endpoint Tests', () => {
 			})
 		}));
 
-		const response = await request(app).get(`/is-user-registered?ticker=TICKER&x_access_token=${MockTwitterKeys.accessToken}`);
+		const response = await request(app).get(`/is-user-registered?ticker=TICKER&x_user_id=${MockTwitterMeResponse.data.id}`);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.body.status).toBe('success');
 		expect(response.body.data.isRegistered).toEqual(false);
@@ -75,7 +75,7 @@ describe('is user registered Endpoint Tests', () => {
 				})
 			})
 		}));
-		const response = await request(app).get(`/is-user-registered?ticker=TICKER&x_access_token=${MockTwitterKeys.accessToken}`);
+		const response = await request(app).get(`/is-user-registered?ticker=TICKER&x_user_id=${MockTwitterMeResponse.data.id}`);
 		expect(response.status).toBe(StatusCodes.OK);
 		expect(response.body.status).toBe('success');
 		expect(response.body.data.isRegistered).toEqual(true);
