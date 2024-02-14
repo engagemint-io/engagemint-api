@@ -13,6 +13,7 @@ export const LeaderboardReplyPointsKey = 'reply_points';
 export const LeaderboardRetweetPointsKey = 'retweet_points';
 export const LeaderboardQuotePointsKey = 'quote_points';
 export const LeaderboardUsernameKey = 'username';
+export const LeaderboardRankKey = 'rank';
 
 export const LeaderboardModel = dynamoose.model(
 	LEADERBOARD_TABLE_NAME,
@@ -37,7 +38,8 @@ export const LeaderboardModel = dynamoose.model(
 		[LeaderboardReplyPointsKey]: Number,
 		[LeaderboardRetweetPointsKey]: Number,
 		[LeaderboardQuotePointsKey]: Number,
-		[LeaderboardUsernameKey]: String
+		[LeaderboardUsernameKey]: String,
+		[LeaderboardRankKey]: Number
 	},
 	{ create: false }
 );
