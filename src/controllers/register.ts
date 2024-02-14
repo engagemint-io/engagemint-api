@@ -6,7 +6,10 @@ import { RegisteredUsersModel, RegisteredUserTwitterIdKey, RegisteredUserTickerK
 import { getSecrets, verifySignature } from '../utils';
 
 const register = async (req: Request, res: Response) => {
-	const { x_access_token, ticker, signature, sei_wallet_address: sei_wallet_address } = req.query;
+	const { authorization } = req.headers;
+	const { ticker, signature, sei_wallet_address } = req.body;
+
+	const x_access_token = (authorization as string)?.split('Bearer ')[1];
 
 	if (!ticker) {
 		return res.status(StatusCodes.BAD_REQUEST).json({
@@ -50,7 +53,11 @@ const register = async (req: Request, res: Response) => {
 		const parsedSignature = JSON.parse(Buffer.from(signature as string, 'base64').toString('utf-8'));
 
 		//First, verify the signature
-		const isValidSignature = await verifySignature(String(sei_wallet_address), String(sei_wallet_address), parsedSignature);
+		const isValidSignature = await verifySignature(
+			String(sei_wallet_address),
+			`Registering for ${ticker} with wallet ${String(sei_wallet_address)}`,
+			parsedSignature
+		);
 
 		if (!isValidSignature) {
 			return res.status(StatusCodes.FORBIDDEN).send({ status: 'fail', reason: 'Forbidden, invalid signature!' });
@@ -85,7 +92,7 @@ const register = async (req: Request, res: Response) => {
 		const projectConfig = projectConfigResponse[0];
 		const { pre_defined_tweet_text } = projectConfig;
 
-		const tweetsResponse = await client.v2.search({	query: `from:${user.data.id} "${pre_defined_tweet_text}"` });
+		const tweetsResponse = await client.v2.search({ query: `"${pre_defined_tweet_text}"` });
 		const tweets = tweetsResponse.tweets;
 		if (!tweets || tweets.length === 0) {
 			return res.status(StatusCodes.FORBIDDEN).send({
